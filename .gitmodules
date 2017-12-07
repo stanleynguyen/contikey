@@ -1,0 +1,3 @@
+[submodule "contikey-frontend"]
+	path = contikey-frontend
+	url = git@github.com:stanleynguyen/contikey-frontend.git
