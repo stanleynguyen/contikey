@@ -1,17 +1,26 @@
 # Contikey
-Contikey is a web app for friends to share articles with each other. 
+
+Contikey is a web app for friends to share articles with each other.
 
 ![](https://d2mxuefqeaa7sj.cloudfront.net/s_9CB1673BEAD3890D5658EDF501AE18932A0C7DC40F9FBC7BCB12770995C03873_1512643113561_Screen+Shot+2017-12-07+at+18.37.53.png)
 
 ### Main functionality
-Users create channels on topics they are interested in, and post articles to these channels. Users can also subscribe to other users’ channels, and the app’s home page will show a feed of the most recently posted articles.
+
+Users create channels on topics they are interested in, and post articles to
+these channels. Users can also subscribe to other users’ channels, and the app’s
+home page will show a feed of the most recently posted articles.
 
 ### Implementation
-Contikey uses MariaDB for the database, Django for the backend, and React for the frontend.
+
+Contikey uses MariaDB for the database, which sits on AWS RDS cloud, Django for
+the backend, sitting on AWS EC2 instances, and React for the frontend, Nginx as
+our load balancer. Our architecture is demonstrated in the following diagram.
+
+![](pictures/architecture.png)
 
 ## ER Diagram
-![](https://d2mxuefqeaa7sj.cloudfront.net/s_D25635E5CBEB07B7D384E4A726E1F745A416101BCAAC840F8945253224A56D6C_1512565581430_dbProjERD.png)
 
+![](https://d2mxuefqeaa7sj.cloudfront.net/s_D25635E5CBEB07B7D384E4A726E1F745A416101BCAAC840F8945253224A56D6C_1512565581430_dbProjERD.png)
 
 Note: All Entities and Relationships have a created_at attribute as well.
 
@@ -36,6 +45,7 @@ CREATE TABLE `article` (
   FOREIGN KEY (`shared_from_article_id`) REFERENCES `article` (`article_id`) ON DELETE SET NULL ON UPDATE CASCADE
 )
 ```
+
 ```sql
 CREATE TABLE `channel` (
   `channel_id` int(11) NOT NULL AUTO_INCREMENT,
@@ -48,6 +58,7 @@ CREATE TABLE `channel` (
   FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE
 )
 ```
+
 ```sql
 CREATE TABLE `channel_tags` (
   `channel_id` int(11) NOT NULL,
@@ -57,6 +68,7 @@ CREATE TABLE `channel_tags` (
   FOREIGN KEY (`tag_id`) REFERENCES `tag` (`tag_id`) ON DELETE CASCADE ON UPDATE CASCADE
 )
 ```
+
 ```sql
 CREATE TABLE `comment` (
   `comment_id` int(11) NOT NULL AUTO_INCREMENT,
@@ -69,6 +81,7 @@ CREATE TABLE `comment` (
   FOREIGN KEY (`article_id`) REFERENCES `article` (`article_id`) ON DELETE CASCADE ON UPDATE CASCADE
 )
 ```
+
 ```sql
 CREATE TABLE `notification` (
   `notification_id` int(11) NOT NULL AUTO_INCREMENT,
@@ -87,6 +100,7 @@ CREATE TABLE `notification` (
   FOREIGN KEY (`type_user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE
 )
 ```
+
 ```sql
 CREATE TABLE `tag` (
   `tag_id` int(11) NOT NULL AUTO_INCREMENT,
@@ -95,6 +109,7 @@ CREATE TABLE `tag` (
   PRIMARY KEY (`tag_id`)
 )
 ```
+
 ```sql
 CREATE TABLE `user` (
   `user_id` int(11) NOT NULL AUTO_INCREMENT,
@@ -108,6 +123,7 @@ CREATE TABLE `user` (
   UNIQUE KEY `facebook_id` (`facebook_id`)
 )
 ```
+
 ```sql
 CREATE TABLE `user_follows_channel` (
   `user_id` int(11) NOT NULL,
@@ -118,6 +134,7 @@ CREATE TABLE `user_follows_channel` (
   FOREIGN KEY (`channel_id`) REFERENCES `channel` (`channel_id`) ON DELETE CASCADE ON UPDATE CASCADE
 )
 ```
+
 ```sql
 CREATE TABLE `user_follows_tag` (
   `user_id` int(11) NOT NULL,
@@ -127,6 +144,7 @@ CREATE TABLE `user_follows_tag` (
   FOREIGN KEY (`tag_id`) REFERENCES `tag` (`tag_id`) ON DELETE CASCADE ON UPDATE CASCADE
 )
 ```
+
 ```sql
 CREATE TABLE `user_friends` (
   `user_id` int(11) NOT NULL,
@@ -137,6 +155,7 @@ CREATE TABLE `user_friends` (
   FOREIGN KEY (`friend_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE
 )
 ```
+
 ```sql
 CREATE TABLE `user_likes_article` (
   `user_id` int(11) NOT NULL,
@@ -148,6 +167,7 @@ CREATE TABLE `user_likes_article` (
   FOREIGN KEY (`article_id`) REFERENCES `article` (`article_id`) ON DELETE CASCADE ON UPDATE CASCADE
 )
 ```
+
 ```sql
 CREATE TABLE `view` (
   `view_id` int(11) NOT NULL AUTO_INCREMENT,
@@ -164,8 +184,10 @@ CREATE TABLE `view` (
 
 We used triggers to:
 
-1. create notifications when someone comments on or likes a user’s article, or subscribes to a user’s channel
-2. update num_subscribers for each channel when someone subscribes to or unsubscribes from it
+1. create notifications when someone comments on or likes a user’s article, or
+   subscribes to a user’s channel
+2. update num_subscribers for each channel when someone subscribes to or
+   unsubscribes from it
 
 ```sql
 CREATE TRIGGER comment_notification AFTER INSERT ON comment
@@ -175,6 +197,7 @@ VALUES ('comment', NEW.article_id, NEW.article_id, (
      SELECT user_id FROM channel WHERE channel_id IN (
          SELECT channel_id FROM article WHERE article_id = NEW.article_id)), false, NEW.user_id);
 ```
+
 ```sql
 CREATE TRIGGER like_notification AFTER INSERT ON user_likes_article
 FOR EACH ROW
@@ -183,6 +206,7 @@ VALUES ('like', NEW.article_id, NEW.article_id, (
      SELECT user_id FROM channel WHERE channel_id IN (
          SELECT channel_id FROM article WHERE article_id = NEW.article_id)), false, NEW.user_id);
 ```
+
 ```sql
 CREATE TRIGGER delete_like_notification AFTER DELETE ON user_likes_article
 FOR EACH ROW
@@ -196,6 +220,7 @@ AND user_id IN (
     SELECT user_id from channel WHERE channel_id IN (
          SELECT channel_id FROM article WHERE article_id = OLD.article_id))
 ```
+
 ```sql
 CREATE TRIGGER follow_notification AFTER INSERT ON user_follows_channel
 FOR EACH ROW
@@ -203,6 +228,7 @@ INSERT INTO notification (type, type_id, channel_id, user_id, is_read, type_user
 VALUES ('channel', NEW.channel_id, NEW.channel_id, (
      SELECT user_id from channel WHERE channel_id = NEW.channel_id), false, NEW.user_id);
 ```
+
 ```sql
 CREATE TRIGGER subscribe_channel AFTER INSERT ON user_follows_channel
 FOR EACH ROW
@@ -211,25 +237,29 @@ SET @subbed_chnn = (SELECT channel_id FROM user_follows_channel WHERE created_at
 UPDATE channel SET num_subscribers = num_subscribers + 1 WHERE channel_id = @subbed_chnn;
 END;
 ```
+
 ```sql
 CREATE TRIGGER unsubscribe_channel AFTER DELETE ON user_follows_channel
 FOR EACH ROW
 UPDATE channel SET num_subscribers = num_subscribers - 1 WHERE channel_id = OLD.channel_id;
 ```
+
 ---
+
 ## Implementation Details
 
 ### Features (numbers corresponding to the bookstore features):
 
-
-**1. Registration** 
+**1. Registration**
 
 Users log in with Facebook and create an account in our database.
 
-- Frontend: uses Facebook Login and sends the Facebook access token to the backend
-- Backend: verifies the access token and retrieves the user’s email, name and photo from Facebook API
-- Database: inserts user info into user table
-- Django’s session module is used to persist sessions
+* Frontend: uses Facebook Login and sends the Facebook access token to the
+  backend
+* Backend: verifies the access token and retrieves the user’s email, name and
+  photo from Facebook API
+* Database: inserts user info into user table
+* Django’s session module is used to persist sessions
 
 ```python
 # insert new user details
@@ -239,13 +269,15 @@ cursor.execute("""
     [data.get('facebook_id'), data.get('name'), data.get('email'), data.get('photo')])
 cursor.execute("SELECT LAST_INSERT_ID()")
 ```
+
 ---
 
-**2. Subscribing to tags** 
+**2. Subscribing to tags**
 
 After registration, users can choose tags to follow.
 
-- Database: stored in user_follows_tag table, with foreign keys referencing user_id and tag_id
+* Database: stored in user_follows_tag table, with foreign keys referencing
+  user_id and tag_id
 
 ```python
 # insert record for user following tag
@@ -259,9 +291,10 @@ cursor.execute("""
 
 ---
 
-**3. User profile** 
+**3. User profile**
 
-Viewing a user’s profile page shows all of that user’s channels, articles, friends and subscribed channels. 
+Viewing a user’s profile page shows all of that user’s channels, articles,
+friends and subscribed channels.
 
 ```python
 # return all of a user's articles
@@ -270,11 +303,14 @@ cursor.execute("""
         (SELECT channel_id FROM channel WHERE user_id= %s);
 """, [user_id])
 ```
+
 ---
 
 **4. User activity log**
 
-Users can also view their own activity log (created channels, liked articles, posted articles, posted comments, made a friend, followed a channel, liked an article) ordered by the time the action was carried out.
+Users can also view their own activity log (created channels, liked articles,
+posted articles, posted comments, made a friend, followed a channel, liked an
+article) ordered by the time the action was carried out.
 
 ```python
 # return all of a user's activity, ordered by date
@@ -320,17 +356,19 @@ ORDER BY created_at;
 
 ---
 
-**5. New channel** 
+**5. New channel**
 
 Users can create a new channel by entering a title, description and tags.
 
-- Database: store new channel record in channel table and tags in channel_tags table
+* Database: store new channel record in channel table and tags in channel_tags
+  table
 
 ```python
 # insert channel
 cursor.execute('INSERT INTO channel (user_id,title,description) VALUES (%s,%s,%s)', [user_id,title,description])
 cursor.execute('SELECT last_insert_id()')
 ```
+
 ```python
 # insert tags records
 tags_insert_str = ''
@@ -338,16 +376,18 @@ for tag in tags:
     tags_insert_str += '('+last_insert+','+tag+'),'
 cursor.execute('INSERT INTO channel_tags(channel_id, tag_id) VALUES ' + tags_insert_str[:-1])
 ```
+
 ![](https://d2mxuefqeaa7sj.cloudfront.net/s_9CB1673BEAD3890D5658EDF501AE18932A0C7DC40F9FBC7BCB12770995C03873_1512644774074_Screen+Shot+2017-12-07+at+19.01.09.png)
 
 ---
 
-**6. Subscribing to a channel** 
+**6. Subscribing to a channel**
 
-Users can subscribe to or unsubscribe from channels, and that channel’s number of subscribers will change automatically.
+Users can subscribe to or unsubscribe from channels, and that channel’s number
+of subscribers will change automatically.
 
-- Database: Store the new subscription in the user_follow_channel table, while a trigger updates the channel table.
-
+* Database: Store the new subscription in the user_follow_channel table, while a
+  trigger updates the channel table.
 
 For creating/deleting a subscription record:
 
@@ -359,7 +399,9 @@ cursor.execute('INSERT INTO user_follows_channel (user_id, channel_id) VALUES (%
 cursor.execute('DELETE FROM user_follows_channel WHERE user_id = %s AND channel_id = %s', [user_id,channel_id])
 ```
 
-As the frontend requires the number of subscribers very frequently, we used a num_subscribers column with triggers instead of executing a count on user_follows_channel as it is more efficient.
+As the frontend requires the number of subscribers very frequently, we used a
+num_subscribers column with triggers instead of executing a count on
+user_follows_channel as it is more efficient.
 
 ```python
 # trigger to increment num_subscribers when a user follows a channel
@@ -374,6 +416,7 @@ migrations.RunSQL("""
 "DROP TRIGGER subscribe_channel"
 )
 ```
+
 Trying new things in SQL.
 
 ```python
@@ -386,24 +429,27 @@ migrations.RunSQL("""
 "DROP TRIGGER unsubscribe_channel"
 )
 ```
+
 ![](https://d2mxuefqeaa7sj.cloudfront.net/s_9CB1673BEAD3890D5658EDF501AE18932A0C7DC40F9FBC7BCB12770995C03873_1512647610280_Screen+Shot+2017-12-07+at+19.53.15.png)
 
 ---
 
 **7. Post article**
 
-Users can post articles to one of their channels. They enter a URL and caption. The datetime will is automatically recorded and the article id incremented.
+Users can post articles to one of their channels. They enter a URL and caption.
+The datetime will is automatically recorded and the article id incremented.
 
-- Backend: we wrote an information scraper to get the details we needed from the URL the user keys in.
+* Backend: we wrote an information scraper to get the details we needed from the
+  URL the user keys in.
 
 ```python
 scraper = metascrapy.Metadata()
 #attempts to get information from the given url
 scraper.scrape(url)
-preview_image = scraper.image 
+preview_image = scraper.image
 #Attempts to encode in utf-8 for database's use.
-preview_title = scraper.title.encode('utf-8') 
-preview_text = scraper.description.encode('utf-8') 
+preview_title = scraper.title.encode('utf-8')
+preview_text = scraper.description.encode('utf-8')
 ```
 
 Following that, creating a new article is a simple affair.
@@ -421,7 +467,7 @@ cursor.execute('INSERT INTO article(channel_id,url,caption,preview_image,preview
 
 Users can like or comment on articles.
 
-- Modifying likes on articles:
+* Modifying likes on articles:
 
 ```python
 # insert a new like
@@ -430,14 +476,16 @@ cursor.execute('INSERT INTO user_likes_article(article_id,user_id) VALUES (%s,%s
 cursor.execute('DELETE FROM user_likes_article WHERE article_id = %s AND user_id = %s', [article_id,user_id])
 ```
 
-- Modifying comments on articles:
+* Modifying comments on articles:
 
 ```python
 # insert a new comment
 cursor.execute('INSERT INTO comment(article_id,user_id,comment_text) VALUES (%s,%s,%s)', [article_id,user_id,comment_text])
 ```
 
-That these two (as well as a handful of other entities in the system) commonly come with other data, and at the same time may or may not exist led to interesting ways of checking them.
+That these two (as well as a handful of other entities in the system) commonly
+come with other data, and at the same time may or may not exist led to
+interesting ways of checking them.
 
 ```python
 # check if a specified user likes a specified article
@@ -450,7 +498,8 @@ cursor.execute("SELECT exists(SELECT 1 FROM user_likes_article WHERE user_id = %
 
 **9. Search**
 
-Users can search for channels (by title), articles (by preview_title) and users (by name).
+Users can search for channels (by title), articles (by preview_title) and users
+(by name).
 
 Held in 3 separate endpoints for user, channel and article separately.
 
@@ -464,11 +513,14 @@ cursor.execute("SELECT * FROM article WHERE preview_title LIKE %s;", [title])
 
 ---
 
-**10. Notifications** 
+**10. Notifications**
 
-Users are shown a list of notifications when they click on the notifications button. Notifications are created for user A when another user B subscribes to one of A’s channels, or likes or comments on one of A’s articles.
+Users are shown a list of notifications when they click on the notifications
+button. Notifications are created for user A when another user B subscribes to
+one of A’s channels, or likes or comments on one of A’s articles.
 
-  - Notification table stores A and B’s user ids, the notification type, id of the article/channel involved, and if the notification has been read.
+* Notification table stores A and B’s user ids, the notification type, id of the
+  article/channel involved, and if the notification has been read.
 
 ```python
 # retrieve list of a user's notifications
@@ -478,7 +530,8 @@ cursor.execute("SELECT * FROM notification WHERE user_id = %s;", [user_id])
 cursor.execute("""UPDATE notification SET is_read = %s WHERE notification_id = %s""",[is_read, notification_id])
 ```
 
-- Triggers are used to create all notifications - on comment or like of an article, and subscription to a channel.
+* Triggers are used to create all notifications - on comment or like of an
+  article, and subscription to a channel.
 
 ```python
 # trigger for creating 'new comment' notifications
@@ -509,16 +562,18 @@ migrations.RunSQL("""
 
 ---
 
-**11. Feed** 
+**11. Feed**
 
-Logged in users will see articles posted by channels they are subscribed to, with the most recent articles appearing at the top. 
+Logged in users will see articles posted by channels they are subscribed to,
+with the most recent articles appearing at the top.
 
 ```python
 # return articles from channels followed by the user
 cursor.execute('SELECT * FROM article WHERE channel_id IN(SELECT channel_id FROM user_follows_channel WHERE user_id = %s) ORDER BY created_at DESC', [user_id])
 ```
 
-If the user is not logged in, the feed will then return a list of all the articles in every channel sorted by date of creation.
+If the user is not logged in, the feed will then return a list of all the
+articles in every channel sorted by date of creation.
 
 ```python
 # return most recent articles from all channels
@@ -529,34 +584,44 @@ cursor.execute('SELECT * FROM article ORDER BY created_at DESC')
 
 ---
 
-**12. Channel recommendation** 
+**12. Channel recommendation**
 
-Users can view channels recommended for them on the home page. This returns a list of channels that the user is not subscribed to, but have tags that the user follows.
+Users can view channels recommended for them on the home page. This returns a
+list of channels that the user is not subscribed to, but have tags that the user
+follows.
 
-- The logic to acquire a logged in user’s recommended channel was broken up into two steps - to intersect the channels the user has not followed and the channels that have tags that the user liked.
+* The logic to acquire a logged in user’s recommended channel was broken up into
+  two steps - to intersect the channels the user has not followed and the
+  channels that have tags that the user liked.
 
 ```python
 # user's not-followed channels
-cursor.execute("SELECT channel_id FROM channel c LEFT JOIN user_follows_channel ufc USING(channel_id) WHERE ufc.user_id != %s OR ufc.user_id IS NULL", [user_id])   
-     
+cursor.execute("SELECT channel_id FROM channel c LEFT JOIN user_follows_channel ufc USING(channel_id) WHERE ufc.user_id != %s OR ufc.user_id IS NULL", [user_id])
+
 # user's like-tagged channels
 cursor.execute("SELECT DISTINCT channel_id FROM channel_tags WHERE tag_id IN(SELECT tag_id FROM user_follows_tag WHERE user_id = %s)", [user_id])
 ```
 
-From the channel_id’s obtained we then query the database for the details necessary for the front end: channel_info, tags of the channel, the owner of the channel, number of subscribers on the channel, and if the user is subscribed to the channel (This value would be False, as the nature of recommendation is to recommend unfollowed channels anyway).
+From the channel_id’s obtained we then query the database for the details
+necessary for the front end: channel_info, tags of the channel, the owner of the
+channel, number of subscribers on the channel, and if the user is subscribed to
+the channel (This value would be False, as the nature of recommendation is to
+recommend unfollowed channels anyway).
 
 ```python
 # gets the channel information, including subscriber count
 cursor.execute("SELECT * FROM channel WHERE channel_id = %s", [i])
-    
+
 # gets the tags of the channel
 cursor.execute("SELECT * FROM tag WHERE tag_id IN(SELECT tag_id FROM channel_tags WHERE channel_id = %s)", [i])
-    
+
 # gets the user who owns the channel
 cursor.execute("SELECT * FROM user WHERE user_id=(SELECT user_id FROM channel WHERE channel_id = %s)", [channel_id])
 ```
 
-Of course, over the course of the system’s use users may be recommended *many* channels. We thus paginated the list of recommended channels before returning them.
+Of course, over the course of the system’s use users may be recommended _many_
+channels. We thus paginated the list of recommended channels before returning
+them.
 
 ```python
 try:
@@ -564,8 +629,8 @@ try:
     queryset = sql.get_user_recommend(user_id)
 except:
     queryset = sql.get_nologin_recommend()
-    
-# instantiates a channel paginator        
+
+# instantiates a channel paginator
 paginator = channel_paginator()
 
 # which paginates the given queryset based on Django's PAGE_SIZE setting
@@ -575,23 +640,26 @@ result_page = paginator.paginate_queryset(queryset,request)
 serializer = recommend_serializer(result_page, many=True)
 return Response({'channel':serializer.data},status=status.HTTP_200_OK)
 ```
-----------
 
+---
 
-**13. Explore** 
+**13. Explore**
 
-The explore page lists the 10 most popular articles (based on number of likes) this month.
+The explore page lists the 10 most popular articles (based on number of likes)
+this month.
 
-- Select the 10 articles with the most user_likes_article records within the last month, ordered by number of records
+* Select the 10 articles with the most user_likes_article records within the
+  last month, ordered by number of records
 
 ```python
 cursor.execute("""
     SELECT * FROM article WHERE article_id IN (
-        SELECT article_id FROM user_likes_article 
-        WHERE TIMESTAMPDIFF(DAY, created_at, NOW()) < 31 
-        GROUP BY article_id 
-        ORDER BY count(*) DESC 
+        SELECT article_id FROM user_likes_article
+        WHERE TIMESTAMPDIFF(DAY, created_at, NOW()) < 31
+        GROUP BY article_id
+        ORDER BY count(*) DESC
         LIMIT 10);
 """)
 ```
+
 ---
