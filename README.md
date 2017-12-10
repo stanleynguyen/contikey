@@ -663,3 +663,7 @@ cursor.execute("""
 ```
 
 ---
+
+### Miscellaneous
+
+[Metascapy](https://github.com/bowsplinter/metascrapy) is a package created to get metadata from websites using a web scraper. Our functionality required to be able to get metadata about the article solely from the link (title, description, image, number of words in article, if x-frame-options were enabled etc). To do this we created a python script and packaged it using pypi and made it installable using pip. This allows us to decouple the functionality and in the future use it with other projects.
