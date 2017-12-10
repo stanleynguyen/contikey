@@ -20,9 +20,9 @@ our load balancer. Our architecture is demonstrated in the following diagram.
 
 ## ER Diagram
 
-![](https://d2mxuefqeaa7sj.cloudfront.net/s_D25635E5CBEB07B7D384E4A726E1F745A416101BCAAC840F8945253224A56D6C_1512565581430_dbProjERD.png)
+![](pictures/ERD.png)
 
-Note: All Entities and Relationships have a created_at attribute as well.
+Note: All entities and relationships have a created_at attribute as well. Coloured shapes represent the tables that we created.
 
 ## Relational Schema
 
