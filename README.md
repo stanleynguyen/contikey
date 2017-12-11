@@ -4,6 +4,16 @@ Contikey is a web app for friends to share articles with each other.
 
 ![](https://d2mxuefqeaa7sj.cloudfront.net/s_9CB1673BEAD3890D5658EDF501AE18932A0C7DC40F9FBC7BCB12770995C03873_1512643113561_Screen+Shot+2017-12-07+at+18.37.53.png)
 
+## Contents
+1. [Main Functionality](#functionality)
+2. [Implementation](#implementation)
+3. [ER Diagram](#er)
+4. [Relational Tables](#tables)
+5. [Relational Triggers](#triggers)
+6. [Features](#features)
+7. [Misc](#misc)
+8. Guides ([Front-end](https://github.com/stanleynguyen/contikey-frontend/blob/e2b6ab7d89108fbe3678ee0a9e7f781b892524ad/Frontend-Setup-GUIDE.md) & [Back-end](https://github.com/bowsplinter/contikey-backend/blob/0d6c1496da7a78b9cc0fd8ab729d3b2487b8374c/AWS-guide.md))
+
 ### Main functionality
 
 Users create channels on topics they are interested in, and post articles to
