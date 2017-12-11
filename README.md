@@ -14,12 +14,14 @@ Contikey is a web app for friends to share articles with each other.
 7. [Misc](#misc)
 8. Guides ([Front-end](https://github.com/stanleynguyen/contikey-frontend/blob/e2b6ab7d89108fbe3678ee0a9e7f781b892524ad/Frontend-Setup-GUIDE.md) & [Back-end](https://github.com/bowsplinter/contikey-backend/blob/0d6c1496da7a78b9cc0fd8ab729d3b2487b8374c/AWS-guide.md))
 
+<a name="functionality"></a>
 ### Main functionality
 
 Users create channels on topics they are interested in, and post articles to
 these channels. Users can also subscribe to other users’ channels, and the app’s
 home page will show a feed of the most recently posted articles.
 
+<a name="implementation"></a>
 ### Implementation
 
 Contikey uses MariaDB for the database, which sits on AWS RDS cloud, Django for
@@ -28,12 +30,14 @@ our load balancer. Our architecture is demonstrated in the following diagram.
 
 ![](pictures/architecture.png)
 
+<a name="er"></a>
 ## ER Diagram
 
 ![](pictures/ERD.png)
 
 Note: All entities and relationships have a created_at attribute as well. Coloured shapes represent the tables that we created.
 
+<a name="tables"></a>
 ## Relational Schema
 
 ### Tables
@@ -190,6 +194,7 @@ CREATE TABLE `view` (
 )
 ```
 
+<a name="triggers"></a>
 ### Triggers
 
 We used triggers to:
@@ -256,6 +261,7 @@ UPDATE channel SET num_subscribers = num_subscribers - 1 WHERE channel_id = OLD.
 
 ---
 
+<a name="features"></a>
 ## Implementation Details
 
 ### Features (numbers corresponding to the bookstore features):
@@ -674,6 +680,7 @@ cursor.execute("""
 
 ---
 
+<a name="misc"></a>
 ### Miscellaneous
 
 [Metascapy](https://github.com/bowsplinter/metascrapy) is a package created to get metadata from websites using a web scraper. Our functionality required to be able to get metadata about the article solely from the link (title, description, image, number of words in article, if x-frame-options were enabled etc). To do this we created a python script and packaged it using pypi and made it installable using pip. This allows us to decouple the functionality and in the future use it with other projects.
